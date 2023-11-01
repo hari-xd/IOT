@@ -1,2 +1,143 @@
-Wokwi project link
-https://wokwi.com/projects/380113876889875457
+// Wokwi project link:  https://wokwi.com/projects/380113876889875457
+
+#define BLYNK_TEMPLATE_ID "TMPL3HVPXZ_98"
+#define BLYNK_TEMPLATE_NAME "Raspberry pi and blynk"
+#define BLYNK_AUTH_TOKEN "_QWuaO56UA_DYjcyRDaiDm-6QLcpJNcA"
+#define BLYNK_PRINT Serial
+
+#include <WiFi.h>
+#include <BlynkSimpleEsp32.h>
+#include <Adafruit_SSD1306.h>  // Include the Adafruit SSD1306 library
+#include <Wire.h>             // Include the Wire library
+
+char auth[] = BLYNK_AUTH_TOKEN;  // Auth Token
+
+char ssid[] = "Wokwi-GUEST";      // SSID (WiFi Network Name)
+char pass[] = "";                // WiFi password
+
+#define SDA_PIN 22
+#define SCL_PIN 23
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+BlynkTimer timer;
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(26, INPUT);
+  pinMode(33, INPUT);
+  pinMode(18, INPUT);
+  pinMode(27, OUTPUT);
+  pinMode(25, OUTPUT);
+  pinMode(19, OUTPUT);
+
+  Wire.begin(SDA_PIN, SCL_PIN);
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println("SSD1306 allocation failed");
+    for (;;)
+      ;
+  }
+
+  display.clearDisplay();
+  display.setTextSize(2);
+
+  Blynk.begin(auth, ssid, pass);
+  timer.setInterval(1000L, sendSensorData);  // Send sensor data to Blynk every second
+}
+
+void sendSensorData() {
+  // Slot 1
+  digitalWrite(27, LOW);
+  delay(100);
+  digitalWrite(27, HIGH);
+  delay(100);
+  digitalWrite(27, LOW);
+  long duration1 = pulseIn(26, HIGH);
+  long distance1 = duration1 * 0.0343 / 2;
+  Serial.print("Distance 1 = ");
+  Serial.println(distance1);
+  delay(100);
+
+  // Slot 2
+  digitalWrite(25, LOW);
+  delay(100);
+  digitalWrite(25, HIGH);
+  delay(100);
+  digitalWrite(25, LOW);
+  long duration2 = pulseIn(33, HIGH);
+  long distance2 = duration2 * 0.0343 / 2;
+  Serial.print("Distance 2 = ");
+  Serial.println(distance2);
+  delay(100);
+
+  // Slot 3
+  digitalWrite(19, LOW);
+  delay(100);
+  digitalWrite(19, HIGH);
+  delay(100);
+  digitalWrite(19, LOW);
+  long duration3 = pulseIn(18, HIGH);
+  long distance3 = duration3 * 0.0343 / 2;
+  Serial.print("Distance 3 = ");
+  Serial.println(distance3);
+
+  if (distance1 < 200) {
+    Blynk.virtualWrite(V1, "Parked");
+} else {
+    Blynk.virtualWrite(V1, "Free");
+}
+if (distance2 < 200) {
+    Blynk.virtualWrite(V2, "Parked");
+} else {
+    Blynk.virtualWrite(V2, "Free");
+}
+if (distance3 < 200) {
+    Blynk.virtualWrite(V3, "Parked");
+} else {
+    Blynk.virtualWrite(V3, "Free");
+}
+
+  displayStatus(distance1, distance2, distance3);
+}
+
+void displayStatus(int distance1, int distance2, int distance3) {
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+
+  display.setCursor(0, 0);
+  display.print("1: ");
+  if (distance1 < 200) {
+    display.println("Parked");
+  } else {
+    display.println("Free");
+  }
+
+  display.setCursor(0, 20);
+  display.print("2: ");
+  if (distance2 < 200) {
+    display.println("Parked");
+  } else {
+    display.println("Free");
+  }
+
+  display.setCursor(0, 40);
+  display.print("3: ");
+  if (distance3 < 200) {
+    display.println("Parked");
+  } else {
+    display.println("Free");
+  }
+
+  display.display();
+}
+
+void loop() {
+  Blynk.run();
+  timer.run();
+}
+
